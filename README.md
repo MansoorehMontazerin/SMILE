@@ -1,7 +1,7 @@
 # SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery
 
-Code for the paper **"SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery"**
-by Mansooreh Montazerin, Antonio Ortega and Ajitesh Srivastava
+Official code for the paper **"SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery"**
+by Mansooreh Montazerin, Antonio Ortega and Ajitesh Srivastava, accepted to **NeurIPS 2026**
 ([arXiv:2609.04639](https://arxiv.org/abs/2609.04639)).
 
 SMILE (**S**ine, **M**ultiplication, **I**dentity, **L**ogarithm, **E**xponential) is a symbolic
@@ -79,11 +79,11 @@ interrupted run can be resumed.
 ## Citation
 
 ```bibtex
-@article{montazerin2026smile,
-  title   = {SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery},
-  author  = {Montazerin, Mansooreh and Ortega, Antonio and Srivastava, Ajitesh},
-  journal = {arXiv preprint arXiv:2609.04639},
-  year    = {2026}
+@inproceedings{montazerin2026smile,
+  title     = {SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery},
+  author    = {Montazerin, Mansooreh and Ortega, Antonio and Srivastava, Ajitesh},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2026}
 }
 ```
 
