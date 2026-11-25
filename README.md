@@ -1,8 +1,7 @@
 # SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery
 
 Official code for the paper **"SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery"**
-by Mansooreh Montazerin, Antonio Ortega and Ajitesh Srivastava, accepted to **NeurIPS 2026**
-([arXiv:2609.04639](https://arxiv.org/abs/2609.04639)).
+by Mansooreh Montazerin, Antonio Ortega and Ajitesh Srivastava, accepted to **NeurIPS 2026**.
 
 SMILE (**S**ine, **M**ultiplication, **I**dentity, **L**ogarithm, **E**xponential) is a symbolic
 regression framework that combines continuous gradient-based optimization with discrete symbolic
