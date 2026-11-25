@@ -1,0 +1,103 @@
+# ── SMILE pipeline configuration ─────────────────────────────────────────────
+#
+# Run with:   python smile_pipeline.py [config.toml]
+#
+# For each equation:
+#   1. Stage 0: a log-linear R² scan decides whether one variable should be fixed.
+#   2. No variable fixed (direct SMILE):
+#        - for each n_hidden in n_hidden_sequence, up to max_trials trials
+#          (each trial checks whether 1/y is easier to fit);
+#        - rounded expression with R² >= 0.999 -> symbolic solution, stop.
+#   3. A variable fixed:
+#        - the largest window where it is effectively constant is detected;
+#        - learn f(other variables) in that window, then g(fixed variable) from
+#          the residual, and combine (up to max_trials trials, same stopping rule).
+#
+# Noise: ε ~ N(0, σ² · mean(y²)) with σ = data.noise_level (0 = no noise).
+
+# ── Feynman equation ─────────────────────────────────────────────────────────
+[feynman]
+eqn = "I.12.1"
+data_dir = "data/Feynman_with_units/"
+feynman_meta = "data/FeynmanEquations.csv"
+# Plain-text file of formula names already known to be solved — these are
+# removed from EQN_LIST before the run starts. One name per line. Set to
+# "" to disable.
+excluded_path = ""
+
+# ── Data loading ─────────────────────────────────────────────────────────────
+[data]
+# Fraction of each dataset's rows used for training (n_train = base_frac x rows).
+base_frac = 0.01
+positive_only = false
+seed = 42
+# Noise level σ for additive Gaussian noise on y:
+#   ε ~ N(0, σ² · mean(y²)).  Standard test values: 0, 0.001, 0.01, 0.1
+noise_level = 0.0
+
+# ── Model architecture ──────────────────────────────────────────────────────
+# n_hidden is controlled by the pipeline — do NOT set here.
+[model]
+neurons_per_type = 1
+lambda_penalty = 1
+lambda_l1 = 0.0
+# Re-initialize mult neuron weights (default N(0,0.1) is too small for mul).
+#   false      – keep default
+#   "uniform"  – Uniform[-2, 2]
+#   "symmetric"– half positive [0.5, 2], half negative [-2, -0.5]
+init_mult_weights = false
+
+# ── Training ─────────────────────────────────────────────────────────────────
+[training]
+epochs = 500
+lr = 0.1
+batch_size = 512
+patience = 300
+print_every = 50
+loss_type = "mse"
+hard_example_mining = false
+hard_frac = 1
+
+# ── Post-processing ─────────────────────────────────────────────────────────
+[postprocessing]
+r2_tolerance = 0.001
+
+# ── Expression extraction ────────────────────────────────────────────────────
+[extraction]
+weight_threshold = 1e-2
+gate_threshold = 0.1
+
+# ── Pipeline settings ───────────────────────────────────────────────────────
+[pipeline]
+max_trials = 2
+step_timeout = 120
+# Enable/disable the fix-variable pipeline.
+#   true  – Auto-detect if variable fixing is needed; if yes, run fix-var pipeline
+#   false – Skip fix-var entirely; always use direct path with n_hidden_sequence
+enable_fix_var = true
+# n_hidden strategy for direct (no-fix) path: list of n_hidden values to try in order.
+# Each value is tried up to max_trials. A rounded R² >= 0.999 stops the search.
+# Common strategies:
+#   [1]        – only use n_hidden=1
+#   [2]        – only use n_hidden=2
+#   [1, 2]     – try n_hidden=1 first, then n_hidden=2 (default)
+#   [1, 2, 3]  – try 1, 2, 3 in sequence
+n_hidden_sequence = [1, 2]
+# ── Fix-variable settings (auto range detection) ────────────────────────────
+[fixvar]
+# Fix point is auto-computed as ceil(min(fix_var)) from the data.
+
+# Window search: try 6 windows from ±max_window_pct to ±min_window_pct of fix_point.
+# Pick the largest window where the fix variable is effectively constant.
+max_window_pct = 0.10
+min_window_pct = 0.005
+
+# Constancy threshold: |beta| * window_width / std(y) must be < this.
+constancy_threshold = 0.1
+
+# Range for "other variables held constant" when estimating partial derivatives.
+other_var_range = [1.8, 2.2]
+
+# Fraction of variable range to use as window for log-linear scan (Stage 0).
+scan_window_frac = 0.005
+
