@@ -24,6 +24,7 @@ smile/                         SMILE package
   expression.py                network -> symbolic expression
   parametric.py                pruning, coefficient refit, rounding, simplification
   data.py, workflow.py         synthetic-data generator and a minimal end-to-end example
+download_feynman.py            downloads the Feynman benchmark into data/
 preprocess.py                  Feynman dataset loader
 smile_pipeline.py              full pipeline on the Feynman benchmark
 config.toml                    pipeline configuration
@@ -42,15 +43,33 @@ A CUDA GPU is used automatically when available.
 
 ## Data
 
-The pipeline runs on the Feynman benchmark from the
-[AI Feynman database](https://space.mit.edu/home/tegmark/aifeynman.html).
-Download `Feynman_with_units` and `FeynmanEquations.csv` and place them as follows:
+The pipeline runs on the 100 equations of the Feynman benchmark
+([Udrescu & Tegmark, 2020](https://www.science.org/doi/10.1126/sciadv.aay2631)).
+The original AI Feynman download page is no longer online, so `download_feynman.py` fetches
+the data from [PMLB](https://github.com/EpistasisLab/pmlb), the copy used by
+[SRBench](https://github.com/cavalab/srbench), and the equation metadata from the
+[Internet Archive copy](https://web.archive.org/web/2025/https://space.mit.edu/home/tegmark/aifeynman.html)
+of the AI Feynman page:
+
+```bash
+python download_feynman.py                    # all 100 equations (roughly 1 GB on disk)
+python download_feynman.py --eqn I.12.1       # selected equations
+```
+
+This creates:
 
 ```
 data/
-  Feynman_with_units/          one whitespace-separated file per equation (e.g. I.12.1)
-  FeynmanEquations.csv         equation metadata (variable names, formulas)
+  Feynman_with_units/          one space-separated file per equation (inputs, then target)
+  FeynmanEquations.csv         equation metadata (variable names, ranges, formulas)
 ```
+
+The PMLB files have 100,000 rows per equation, while the original AI Feynman files used in the
+paper had 1,000,000. `config.toml` therefore sets `base_frac = 0.1`, which gives the same
+10,000 training rows per equation as in the paper (`base_frac = 0.01` with the original files).
+The fix-variable stage selects the rows inside a narrow window of the fixed variable, so with
+PMLB data that window holds about 10 times fewer rows than with the original files. Results can
+therefore differ slightly from the paper.
 
 Paths are set in the `[feynman]` section of the config; relative paths are resolved next to the
 config file.
@@ -78,11 +97,11 @@ interrupted run can be resumed.
 ## Citation
 
 ```bibtex
-@inproceedings{montazerin2026smile,
-  title     = {SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery},
-  author    = {Montazerin, Mansooreh and Ortega, Antonio and Srivastava, Ajitesh},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
-  year      = {2026}
+@article{montazerin2026smile,
+  title={SMILE: Bridging Continuous Optimization and Discrete Symbolic Recovery},
+  author={Montazerin, Mansooreh and Ortega, Antonio and Srivastava, Ajitesh},
+  journal={arXiv preprint arXiv:2609.04639},
+  year={2026}
 }
 ```
 
