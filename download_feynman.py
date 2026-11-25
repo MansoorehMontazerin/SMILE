@@ -1,111 +1,96 @@
-"""Download the Feynman benchmark into data/ in the format smile_pipeline.py reads.
+"""Download the original AI Feynman benchmark into data/.
 
-    python download_feynman.py                    # all 100 equations
-    python download_feynman.py --eqn I.12.1 I.6.2a
+    python download_feynman.py                 # download, unpack, remove the archive
+    python download_feynman.py --keep-archive  # keep Feynman_with_units.tar.gz as well
 
-The original AI Feynman download page (space.mit.edu/home/tegmark/aifeynman.html) is
-offline. This script uses:
-  - FeynmanEquations.csv  from the Internet Archive copy of the AI Feynman page;
-  - the equation data     from PMLB (github.com/EpistasisLab/pmlb), the copy used by
-                          SRBench: 100,000 rows per equation (the original files had
-                          1,000,000 rows).
+The AI Feynman page (space.mit.edu/home/tegmark/aifeynman.html) is no longer online, but
+its Internet Archive copy links the data files:
+  - Feynman_with_units.tar.gz (4.1 GB; about 8 GB unpacked, 1,000,000 rows per equation)
+    from the Dropbox link given on that page;
+  - FeynmanEquations.csv (variable names, ranges, formulas) from the archived page.
 
-Each PMLB table (tab-separated, header row, target last) is written as
-data/Feynman_with_units/<eqn>: space-separated, no header, inputs then target, the same
-layout as the original AI Feynman files.
+Result:
+  data/Feynman_with_units/<eqn>     one space-separated file per equation
+  data/FeynmanEquations.csv
 """
 from __future__ import annotations
 
 import argparse
-import gzip
-import io
 import sys
-import urllib.error
+import tarfile
 import urllib.request
 from pathlib import Path
 
-import pandas as pd
-
 ROOT = Path(__file__).resolve().parent
+DATA_URL = "https://www.dropbox.com/s/7kgfr00qpokgz8w/Feynman_with_units.tar.gz?dl=1"
 META_URL = ("https://web.archive.org/web/20250630050842id_/"
             "https://space.mit.edu/home/tegmark/aifeynman/FeynmanEquations.csv")
-PMLB_URL = ("https://media.githubusercontent.com/media/EpistasisLab/pmlb/master/"
-            "datasets/{name}/{name}.tsv.gz")
+ARCHIVE_PAGE = "https://web.archive.org/web/20251212164109/https://space.mit.edu/home/tegmark/aifeynman.html"
 
 
-def fetch(url: str) -> bytes:
+def download(url: str, target: Path) -> None:
+    """Stream url to target (via a .part file), printing progress."""
+    part = target.with_name(target.name + ".part")
     request = urllib.request.Request(url, headers={"User-Agent": "smile-download/1.0"})
-    with urllib.request.urlopen(request, timeout=120) as response:
-        return response.read()
+    with urllib.request.urlopen(request, timeout=120) as response, open(part, "wb") as stream:
+        total = int(response.headers.get("Content-Length") or 0)
+        done = 0
+        while chunk := response.read(1 << 20):
+            stream.write(chunk)
+            done += len(chunk)
+            if total:
+                print(f"\r  {done / 1e9:.2f} / {total / 1e9:.2f} GB ({100 * done / total:.0f}%)",
+                      end="", flush=True)
+    print()
+    part.replace(target)
 
 
-def pmlb_name(eqn: str) -> str:
-    """I.12.1 -> feynman_I_12_1, II.6.15a -> feynman_II_6_15a."""
-    return "feynman_" + eqn.replace(".", "_")
-
-
-def variable_names(row: pd.Series) -> list[str]:
-    names = []
-    for k in range(1, 11):
-        value = row.get(f"v{k}_name")
-        if isinstance(value, str) and value.strip():
-            names.append(value.strip())
-    return names
+def extract(archive: Path, out_dir: Path) -> None:
+    """Unpack the archive into out_dir, refusing any member that would land outside it."""
+    root = out_dir.resolve()
+    with tarfile.open(archive, "r:gz") as tar:
+        for member in tar:
+            path = (root / member.name).resolve()
+            if root not in path.parents and path != root:
+                sys.exit(f"Unsafe path in archive: {member.name}")
+            if not (member.isfile() or member.isdir()):
+                continue
+            tar.extract(member, root)
+            if member.isfile():
+                print(f"\r  extracted {member.name:<40}", end="", flush=True)
+    print()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--eqn", nargs="+", help="Equations to download (default: all).")
     parser.add_argument("--out", type=Path, default=ROOT / "data", help="Output folder (default: data/).")
-    parser.add_argument("--overwrite", action="store_true", help="Download files that already exist.")
+    parser.add_argument("--keep-archive", action="store_true", help="Keep the downloaded .tar.gz.")
     args = parser.parse_args()
+    args.out.mkdir(parents=True, exist_ok=True)
 
-    out_dir = args.out / "Feynman_with_units"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    meta = args.out / "FeynmanEquations.csv"
+    if meta.exists():
+        print(f"{meta} exists, skipped")
+    else:
+        print("Downloading FeynmanEquations.csv")
+        download(META_URL, meta)
 
-    meta_path = args.out / "FeynmanEquations.csv"
-    if args.overwrite or not meta_path.exists():
-        print(f"Downloading FeynmanEquations.csv -> {meta_path}")
-        meta_path.write_bytes(fetch(META_URL))
-    meta = pd.read_csv(meta_path, encoding="utf-8-sig").dropna(subset=["Filename"])
-    meta = meta.set_index("Filename")
+    data_dir = args.out / "Feynman_with_units"
+    if data_dir.is_dir() and any(data_dir.iterdir()):
+        print(f"{data_dir} exists, skipped")
+    else:
+        archive = args.out / "Feynman_with_units.tar.gz"
+        if not archive.exists():
+            print(f"Downloading Feynman_with_units.tar.gz (4.1 GB)\n  source: {ARCHIVE_PAGE}")
+            download(DATA_URL, archive)
+        print(f"Unpacking into {args.out}")
+        extract(archive, args.out)
+        if not args.keep_archive:
+            archive.unlink()
 
-    equations = args.eqn or list(meta.index)
-    unknown = [e for e in equations if e not in meta.index]
-    if unknown:
-        sys.exit(f"Not in FeynmanEquations.csv: {unknown}")
-
-    failed = []
-    for k, eqn in enumerate(equations, 1):
-        target = out_dir / eqn
-        if target.exists() and not args.overwrite:
-            print(f"[{k}/{len(equations)}] {eqn}: exists, skipped")
-            continue
-        try:
-            raw = gzip.decompress(fetch(PMLB_URL.format(name=pmlb_name(eqn))))
-        except (urllib.error.URLError, OSError) as error:
-            print(f"[{k}/{len(equations)}] {eqn}: download failed ({error})")
-            failed.append(eqn)
-            continue
-        table = pd.read_csv(io.BytesIO(raw), sep="\t", float_precision="round_trip")  # exact values
-        names = variable_names(meta.loc[eqn])
-        inputs = [c for c in table.columns if c != "target"]
-        if sorted(inputs) != sorted(names) or "target" not in table.columns:
-            print(f"[{k}/{len(equations)}] {eqn}: columns {list(table.columns)} do not match "
-                  f"the metadata variables {names}; skipped")
-            failed.append(eqn)
-            continue
-        table = table[names + ["target"]]  # metadata variable order, target last
-        with open(target, "w", newline="\n") as stream:
-            for row in table.itertuples(index=False):
-                stream.write(" ".join(repr(float(v)) for v in row) + " \n")
-        print(f"[{k}/{len(equations)}] {eqn}: {len(table)} rows -> {target}")
-
-    print(f"\nDone: {len(equations) - len(failed)} of {len(equations)} equations in {out_dir}")
-    if failed:
-        print(f"Failed: {failed}")
-        sys.exit(1)
+    count = sum(1 for f in data_dir.iterdir() if f.is_file()) if data_dir.is_dir() else 0
+    print(f"\nDone: {count} equation files in {data_dir}, metadata in {meta}")
 
 
 if __name__ == "__main__":

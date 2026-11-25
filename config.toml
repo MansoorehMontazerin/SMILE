@@ -27,10 +27,9 @@ excluded_path = ""
 
 # ── Data loading ─────────────────────────────────────────────────────────────
 [data]
-# Fraction of each dataset's rows used for training (n_train = base_frac x rows).
-# 0.1 with the PMLB data from download_feynman.py (100,000 rows) gives 10,000 training
-# rows, as in the paper (original AI Feynman files: 1,000,000 rows with base_frac = 0.01).
-base_frac = 0.1
+# Fraction of each dataset's rows used for training (n_train = base_frac x rows):
+# 0.01 x 1,000,000 rows (AI Feynman files) = 10,000 training rows, as in the paper.
+base_frac = 0.01
 positive_only = false
 seed = 42
 # Noise level σ for additive Gaussian noise on y:

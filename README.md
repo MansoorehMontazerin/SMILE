@@ -45,31 +45,28 @@ A CUDA GPU is used automatically when available.
 
 The pipeline runs on the 100 equations of the Feynman benchmark
 ([Udrescu & Tegmark, 2020](https://www.science.org/doi/10.1126/sciadv.aay2631)).
-The original AI Feynman download page is no longer online, so `download_feynman.py` fetches
-the data from [PMLB](https://github.com/EpistasisLab/pmlb), the copy used by
-[SRBench](https://github.com/cavalab/srbench), and the equation metadata from the
-[Internet Archive copy](https://web.archive.org/web/2025/https://space.mit.edu/home/tegmark/aifeynman.html)
-of the AI Feynman page:
+The AI Feynman page is no longer online at MIT; its
+[Internet Archive copy](https://web.archive.org/web/20251212164109/https://space.mit.edu/home/tegmark/aifeynman.html)
+links the original data files. `download_feynman.py` downloads them:
 
 ```bash
-python download_feynman.py                    # all 100 equations (roughly 1 GB on disk)
-python download_feynman.py --eqn I.12.1       # selected equations
+python download_feynman.py                    # 4.1 GB download, about 8 GB unpacked
+python download_feynman.py --keep-archive     # also keep Feynman_with_units.tar.gz
 ```
 
 This creates:
 
 ```
 data/
-  Feynman_with_units/          one space-separated file per equation (inputs, then target)
+  Feynman_with_units/          one space-separated file per equation (1,000,000 rows: inputs, then target)
   FeynmanEquations.csv         equation metadata (variable names, ranges, formulas)
 ```
 
-The PMLB files have 100,000 rows per equation, while the original AI Feynman files used in the
-paper had 1,000,000. `config.toml` therefore sets `base_frac = 0.1`, which gives the same
-10,000 training rows per equation as in the paper (`base_frac = 0.01` with the original files).
-The fix-variable stage selects the rows inside a narrow window of the fixed variable, so with
-PMLB data that window holds about 10 times fewer rows than with the original files. Results can
-therefore differ slightly from the paper.
+To download by hand instead: get
+[Feynman_with_units.tar.gz](https://www.dropbox.com/s/7kgfr00qpokgz8w/Feynman_with_units.tar.gz?dl=0)
+and
+[FeynmanEquations.csv](https://web.archive.org/web/20250630050842/https://space.mit.edu/home/tegmark/aifeynman/FeynmanEquations.csv)
+(both linked from the archived page), unpack the archive into `data/`, and put the CSV next to it.
 
 Paths are set in the `[feynman]` section of the config; relative paths are resolved next to the
 config file.
