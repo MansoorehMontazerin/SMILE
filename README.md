@@ -83,7 +83,7 @@ In the config:
 - `[feynman] eqn = "I.12.1"` runs one equation; `eqn = "all"` runs every equation in the data folder.
 - `[data] noise_level` adds Gaussian noise `ε ~ N(0, σ² · mean(y²))` to the target (0 = no noise).
 - `[pipeline] n_hidden_sequence = [1, 2]`: hidden layers tried in order for the direct fit.
-- `[pipeline] enable_fix_var` turns the fix-variable stage on or off.
+
 
 Each equation runs in its own subprocess. Results are written to `results/`
 (one `<eqn>.csv` per equation with all trials, plus `_summary.csv`), and model checkpoints to
@@ -100,7 +100,7 @@ interrupted run can be resumed.
   year={2026}
 }
 ```
-
+Please email Mansooreh Montazerin at mmontaze@usc.edu in case you have any questions.
 ## License
 
 MIT, see [LICENSE](LICENSE).
