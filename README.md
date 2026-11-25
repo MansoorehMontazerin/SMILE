@@ -11,7 +11,7 @@ recovery, in three stages:
    fixed so that the remaining expression can be learned separately.
 2. **Continuous optimization** of a network built from interpretable activations
    (sin, multiplication, identity, log, exp).
-3. **Symbolic recovery**: structured pruning, coefficient optimization and rounding distil the
+3. **Symbolic recovery**: structured pruning, coefficient optimization, and rounding distill the
    network into a compact closed-form expression with exact constants.
 
 ## Repository layout
@@ -85,8 +85,7 @@ In the config:
 
 - `[feynman] eqn = "I.12.1"` runs one equation; `eqn = "all"` runs every equation in the data folder.
 - `[data] noise_level` adds Gaussian noise `ε ~ N(0, σ² · mean(y²))` to the target (0 = no noise).
-- `[pipeline] n_hidden_sequence = [1, 2]`: hidden layers tried in order for the direct fit; a rounded
-  expression with R² ≥ 0.999 counts as a symbolic solution and stops the search.
+- `[pipeline] n_hidden_sequence = [1, 2]`: hidden layers tried in order for the direct fit.
 - `[pipeline] enable_fix_var` turns the fix-variable stage on or off.
 
 Each equation runs in its own subprocess. Results are written to `results/`
